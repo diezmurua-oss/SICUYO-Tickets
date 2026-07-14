@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: sicuyo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sicuyo_tickets
+      POSTGRES_USER: sicuyo
+      POSTGRES_PASSWORD: sicuyo123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sicuyo-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: sicuyo-backend
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    networks:
+      - sicuyo-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sicuyo-frontend
+    restart: unless-stopped
+    command: npm run dev -- --host
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - sicuyo-network
+
+volumes:
+  postgres_data:
+
+networks:
+  sicuyo-network:
